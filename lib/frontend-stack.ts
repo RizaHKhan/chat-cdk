@@ -1,7 +1,7 @@
 import { Construct } from "constructs";
 import { StackExtender } from "../utils/StackExtender";
 import { RemovalPolicy, SecretValue, StackProps } from "aws-cdk-lib";
-import { Bucket } from "aws-cdk-lib/aws-s3";
+import { BlockPublicAccess, Bucket } from "aws-cdk-lib/aws-s3";
 import { ARecord, HostedZone, RecordTarget } from "aws-cdk-lib/aws-route53";
 import {
   Certificate,
@@ -10,6 +10,7 @@ import {
 import {
   CachePolicy,
   Distribution,
+  OriginAccessIdentity,
   ViewerProtocolPolicy,
 } from "aws-cdk-lib/aws-cloudfront";
 import { S3StaticWebsiteOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
@@ -37,6 +38,7 @@ import {
 
 export class FrontendStack extends StackExtender {
   private distributionBucket: Bucket;
+  private originAccessIdentity: OriginAccessIdentity
   private artifactBucket: Bucket;
 
   private sourceArtifact: Artifact;
@@ -62,10 +64,21 @@ export class FrontendStack extends StackExtender {
       validation: CertificateValidation.fromDns(this.hostedZone),
     });
 
-    // Creating buckets, and distributions for Frontend application
-    this.distributionBucket = new Bucket(this, "DistributionBucket", {
+    this.originAccessIdentity = new OriginAccessIdentity(
+      this,
+      "OriginAccessIdentity",
+    );
+
+    this.distributionBucket = new Bucket(this, `DistributionBucket`, {
+      bucketName: `chat-frontend-deploy-bucket`,
       removalPolicy: RemovalPolicy.DESTROY,
+      autoDeleteObjects: true,
+      websiteIndexDocument: "index.html",
+      websiteErrorDocument: "error.html",
+      publicReadAccess: true,
+      blockPublicAccess: BlockPublicAccess.BLOCK_ACLS,
     });
+    this.distributionBucket.grantRead(this.originAccessIdentity);
 
     this.artifactBucket = new Bucket(this, "ArtifactBucket", {
       removalPolicy: RemovalPolicy.DESTROY,
