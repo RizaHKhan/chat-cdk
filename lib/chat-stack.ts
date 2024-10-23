@@ -1,5 +1,5 @@
 import { StackProps } from "aws-cdk-lib";
-import { WebSocketApi } from "aws-cdk-lib/aws-apigatewayv2";
+import { WebSocketApi, WebSocketStage } from "aws-cdk-lib/aws-apigatewayv2";
 import { WebSocketLambdaIntegration } from "aws-cdk-lib/aws-apigatewayv2-integrations";
 import { Code, Function, Runtime } from "aws-cdk-lib/aws-lambda";
 import { Construct } from "constructs";
@@ -41,10 +41,18 @@ export class ChatStack extends StackExtender {
       integration: new WebSocketLambdaIntegration("message", lambdas[2]),
     });
 
+    // Create the WebSocket stage for 'dev'
+    const devStage = new WebSocketStage(this, "ChatSocketDevStage", {
+      webSocketApi: socket,
+      stageName: "dev",
+      autoDeploy: true, // This enables automatic deployment of changes
+    });
+
+    // Store the WebSocket URL in SSM Parameter Store
     new StringParameter(this, "WebSocketApiUrlParam", {
       parameterName: "/chat/websocket-url",
-      stringValue: socket.apiEndpoint,
-      description: "WebSocket API URL for the Chat Application",
+      stringValue: devStage.url,
+      description: "WebSocket API URL for the Chat Application (dev stage)",
     });
   }
 }

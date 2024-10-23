@@ -8,12 +8,20 @@ import {
   CertificateValidation,
 } from "aws-cdk-lib/aws-certificatemanager";
 import {
+  AllowedMethods,
   CachePolicy,
   Distribution,
   OriginAccessIdentity,
+  OriginRequestCookieBehavior,
+  OriginRequestHeaderBehavior,
+  OriginRequestPolicy,
+  OriginRequestQueryStringBehavior,
   ViewerProtocolPolicy,
 } from "aws-cdk-lib/aws-cloudfront";
-import { S3StaticWebsiteOrigin } from "aws-cdk-lib/aws-cloudfront-origins";
+import {
+  HttpOrigin,
+  S3StaticWebsiteOrigin,
+} from "aws-cdk-lib/aws-cloudfront-origins";
 import { CloudFrontTarget } from "aws-cdk-lib/aws-route53-targets";
 import { Artifact, Pipeline } from "aws-cdk-lib/aws-codepipeline";
 import {
@@ -38,7 +46,7 @@ import {
 
 export class FrontendStack extends StackExtender {
   private distributionBucket: Bucket;
-  private originAccessIdentity: OriginAccessIdentity
+  private originAccessIdentity: OriginAccessIdentity;
   private artifactBucket: Bucket;
 
   private sourceArtifact: Artifact;
@@ -98,6 +106,7 @@ export class FrontendStack extends StackExtender {
           origin: new S3StaticWebsiteOrigin(this.distributionBucket),
           viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           cachePolicy: CachePolicy.CACHING_DISABLED,
+          allowedMethods: AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         },
         domainNames: [`www.${this.domainName}`, this.domainName],
         certificate: this.certificate,
